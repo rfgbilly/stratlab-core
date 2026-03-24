@@ -1,0 +1,10 @@
+*.csv
+*.db
+*.sqlite
+*.log
+*.pyc
+__pycache__/
+.env
+config.json
+data/*.csv
+.venv/
