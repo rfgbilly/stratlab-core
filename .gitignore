@@ -1,10 +1,35 @@
+# Data files
 *.csv
 *.db
 *.sqlite
-*.log
+data/*.csv
+data/btc_whale*
+orderflow.db
+
+# Config & secrets
+config.json
+.env
+
+# Frontend (not open-sourced)
+frontend/
+admin.html
+
+# Proprietary modules (not open-sourced)
+llm_parser.py
+sim_engine.py
+
+# Python
 *.pyc
 __pycache__/
-.env
-config.json
-data/*.csv
+*.egg-info/
+dist/
+build/
 .venv/
+venv/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
