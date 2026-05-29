@@ -923,6 +923,52 @@ def _generate_condition_code(cond, for_entry=True):
     operator = cond.get("operator", "")
     value = cond.get("value", "")
     timeframe = cond.get("timeframe", "1h")
+
+    # ── None 防禦：需要 operator+value 的指標，不允許 None ──
+    _NO_OPERATOR_NEEDED = {
+        "price_above_ma", "price_below_ma", "price_above_ema", "price_below_ema",
+        "price_above_vwap", "price_below_vwap",
+        "bollinger", "ma_cross", "ema_cross", "macd_cross", "kdj_cross",
+        "consecutive_candles", "consecutive_whale_sell_increase", "whale_sell_peak_decline",
+    }
+    if indicator not in _NO_OPERATOR_NEEDED:
+        if value is None or value == "":
+            raise ValueError(
+                f"無法為指標「{indicator}」生成比較運算：閾值(value)缺失。"
+                f"LLM 未能從用戶描述中抽取明確數字。"
+            )
+        _VALID_OPS = {">", "<", ">=", "<=", "==", "!="}
+        if not operator or operator not in _VALID_OPS:
+            raise ValueError(
+                f"無法為指標「{indicator}」生成比較運算：運算符(operator)無效，"
+                f"收到「{operator}」，合法值為 {_VALID_OPS}。"
+            )
+
+    # ── Day 2 P0-1~4: value 範圍合理性檢查 ──
+    _INDICATOR_VALUE_RANGES = {
+        "whale_sell_vol": (100_000, 500_000_000),
+        "whale_buy_vol": (100_000, 500_000_000),
+        "whale_delta": (-500_000_000, 500_000_000),
+        "oi_change_1h": (-20, 20),
+        "oi_change_4h": (-40, 40),
+        "oi_change_24h": (-80, 80),
+        "funding_rate": (-0.03, 0.03),
+        "taker_buy_vol": (1, 100_000),
+        "taker_sell_vol": (1, 100_000),
+    }
+    if indicator in _INDICATOR_VALUE_RANGES and value is not None:
+        _min_val, _max_val = _INDICATOR_VALUE_RANGES[indicator]
+        try:
+            _v = float(value)
+            if not (_min_val <= _v <= _max_val):
+                raise ValueError(
+                    f"指標「{indicator}」的閾值 {value} 超出合理範圍 "
+                    f"[{_min_val}, {_max_val}]，可能是單位錯誤。"
+                )
+        except (TypeError, ValueError) as _e:
+            if "超出合理範圍" in str(_e):
+                raise
+
     if for_entry:
         r, p = "row", "prev_row"
     else:
